@@ -7,6 +7,7 @@ the embedding analysis pipeline.
 
 from abc import ABC, abstractmethod
 from PIL import Image
+import torch
 
 
 class BaseEmbedder(ABC):
@@ -44,3 +45,15 @@ class BaseEmbedder(ABC):
         else:
             image = image_input
         return image.convert("RGB")
+    
+    @staticmethod
+    def _select_device():
+        """Pick the best available device: cuda > mps > cpu."""
+        if torch.cuda.is_available():
+            ret =  "cuda"
+        if torch.backends.mps.is_available():
+            ret =  "mps"
+        ret =  "cpu"
+
+        print(f"using {ret}")
+        return ret

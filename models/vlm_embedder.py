@@ -22,7 +22,7 @@ from transformers import (
 from sentence_transformers import SentenceTransformer
 from qwen_vl_utils import process_vision_info
 
-from base_embedder import BaseEmbedder
+from models.base_embedder import BaseEmbedder
 
 
 class VLMEmbedder(BaseEmbedder):
@@ -42,7 +42,7 @@ class VLMEmbedder(BaseEmbedder):
         self,
         model_id: str = "Qwen/Qwen2-VL-2B-Instruct",
         embed_model_id: str = "all-mpnet-base-v2",
-        device_map: str = "auto",
+        device_map: str = None,
         load_in_4bit: bool = True,
     ):
         """
@@ -53,6 +53,7 @@ class VLMEmbedder(BaseEmbedder):
             device_map: device_map passed to `from_pretrained`.
             load_in_4bit: whether to load the VLM in 4-bit quantization.
         """
+        device_map = device_map or self._select_device()
         quantization_config = None
         if load_in_4bit:
             quantization_config = BitsAndBytesConfig(

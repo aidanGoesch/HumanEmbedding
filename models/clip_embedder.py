@@ -7,7 +7,7 @@ Semantic image embeddings via CLIP.
 import torch
 from transformers import CLIPModel, CLIPProcessor
 
-from base_embedder import BaseEmbedder
+from models.base_embedder import BaseEmbedder
 
 
 class CLIPEmbedder(BaseEmbedder):
@@ -17,7 +17,7 @@ class CLIPEmbedder(BaseEmbedder):
     """
 
     def __init__(self, model_name: str = "openai/clip-vit-base-patch32", device: str = None):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or self._select_device()
         self.model = CLIPModel.from_pretrained(model_name).to(self.device)
         self.processor = CLIPProcessor.from_pretrained(model_name)
 

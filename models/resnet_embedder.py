@@ -10,7 +10,7 @@ import torch.nn as nn
 import torchvision.models as models
 import torchvision.transforms as transforms
 
-from base_embedder import BaseEmbedder
+from models.base_embedder import BaseEmbedder
 
 
 class ResNetEmbedder(BaseEmbedder):
@@ -37,7 +37,7 @@ class ResNetEmbedder(BaseEmbedder):
                 - 'layer2': Second residual block (still mostly visual, minimal semantics)
             device: Torch device string. Defaults to cuda if available, else cpu.
         """
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or self._select_device()
 
         resnet_model = models.resnet50(pretrained=True)
         resnet_model.eval()
