@@ -51,9 +51,10 @@ class BaseEmbedder(ABC):
         """Pick the best available device: cuda > mps > cpu."""
         if torch.cuda.is_available():
             ret =  "cuda"
-        if torch.backends.mps.is_available():
+        elif torch.backends.mps.is_available():
             ret =  "mps"
-        ret =  "cpu"
+        else:
+            ret =  "cpu"
 
         print(f"using {ret}")
         return ret
