@@ -270,3 +270,66 @@ class VLMEmbedder(BaseEmbedder):
         if normalize:
             combined = self._normalize(combined)
         return combined
+
+    def get_text_only_embedding(
+        self,
+        text: str,
+        layer: int = -1,
+        pooling: str = "mean",
+        normalize: bool = True,
+    ) -> np.ndarray:
+        """
+        Embed raw text using the VLM's own hidden states — no image, no
+        generation, no separate sentence-transformer. Mirrors `get_embedding`
+        but pools over text tokens instead of visual tokens.
+
+        Args:
+            text: The string to embed.
+            layer: Which hidden_states layer to pool (-1 = last layer).
+            pooling: "mean" or "max" pooling over token positions.
+            normalize: L2-normalize the output vector.
+
+        Returns:
+            np.ndarray of shape (hidden_dim,)
+        """
+        messages = [
+            {"role": "system", "content": self.SYSTEM_PROMPT},
+            {"role": "user", "content": [{"type": "text", "text": text}]},
+        ]
+        text_input = self.processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=False
+        )
+        inputs = self.processor(
+            text=[text_input],
+            return_tensors="pt",
+        ).to(self.model.device)
+
+        with torch.no_grad():
+            outputs = self.model(
+                **inputs,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+
+        hidden = outputs.hidden_states[layer].squeeze(0)  # (seq_len, d_model)
+
+        # exclude special tokens from pooling
+        special_ids = set(self.processor.tokenizer.all_special_ids)
+        input_ids = inputs["input_ids"].squeeze(0)
+        content_mask = torch.tensor(
+            [tok.item() not in special_ids for tok in input_ids],
+            dtype=torch.bool,
+        )
+        content_hidden = hidden[content_mask]
+
+        if pooling == "mean":
+            pooled = content_hidden.mean(dim=0)
+        elif pooling == "max":
+            pooled = content_hidden.max(dim=0).values
+        else:
+            raise ValueError(f"Unknown pooling: {pooling}")
+
+        vector = pooled.cpu().float().numpy()
+        if normalize:
+            vector = self._normalize(vector)
+        return vector
